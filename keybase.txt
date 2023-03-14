@@ -1,0 +1,56 @@
+==================================================================
+https://keybase.io/cvagner
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://cvagner.github.io
+  * I am cvagner (https://keybase.io/cvagner) on keybase.
+  * I have a public key ASCRjru7bdyU0x8fSug3uQcbWehg8oX6S4508HkkJ-YEeQo
+
+To do so, I am signing this object:
+
+{
+  "body": {
+    "key": {
+      "eldest_kid": "0101fb8540d27e69668d60d9cb4a361a36c2f90177197f85d2ece19970c502e282160a",
+      "host": "keybase.io",
+      "kid": "0120918ebbbb6ddc94d31f1f4ae837b9071b59e860f285fa4b8e74f0792427e604790a",
+      "uid": "9066010be83edd885ea9ed247fd5b619",
+      "username": "cvagner"
+    },
+    "merkle_root": {
+      "ctime": 1678780235,
+      "hash": "1615066cce7b07339a0bdd3af4532c2274a9ea72c02a76c8f1691991d650c2ced5bef2c6858fc23bb15af579ef2e5389a0f13291044b83b6f70495999f8c8363",
+      "hash_meta": "8d0cb82a92bb845d4887dd1c1963bf1dc418092d43f9973239563cf813dc72b6",
+      "seqno": 24191936
+    },
+    "service": {
+      "entropy": "zqlEQ1vg/huPeIvt2q06iEmq",
+      "hostname": "cvagner.github.io",
+      "protocol": "https:"
+    },
+    "type": "web_service_binding",
+    "version": 2
+  },
+  "client": {
+    "name": "keybase.io go client",
+    "version": "6.0.2"
+  },
+  "ctime": 1678780333,
+  "expire_in": 504576000,
+  "prev": "eadf587298518eb9d0c2d654b2e399560558f699734e71cc79c72f9e0a8edd86",
+  "seqno": 42,
+  "tag": "signature"
+}
+
+which yields the signature:
+
+hKRib2R5hqhkZXRhY2hlZMOpaGFzaF90eXBlCqNrZXnEIwEgkY67u23clNMfH0roN7kHG1noYPKF+kuOdPB5JCfmBHkKp3BheWxvYWTESpcCKsQg6t9YcphRjrnQwtZUsuOZVgVY9plzTnHMeccvngqO3YbEIMMuRIa8ddemq/F67Oql/LHTWEtLlnIIAHzaQsXHSNZlAgHCo3NpZ8RAEf6cZM5E0KuI6hEiScKH4gdApnQvNyL1Qf17Ziw2bK8mes0OxkUZvBAovNFBrB0xgkfuM3zRmCCISjGPF63ACqhzaWdfdHlwZSCkaGFzaIKkdHlwZQildmFsdWXEICjPnsvFS1d/APYn28ymgDUeyzOyHG4l7hIG51rFjMO6o3RhZ80CAqd2ZXJzaW9uAQ==
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/cvagner
+
+==================================================================
