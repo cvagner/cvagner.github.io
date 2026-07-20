@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kroki Editor</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+        #input {
+            width: 50%;
+            min-width: 100px;
+            height: 100%;
+            border: none;
+            padding: 20px;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+        }
+        #resizer {
+            width: 6px;
+            cursor: col-resize;
+            background: #ddd;
+            transition: background 0.2s;
+        }
+        #resizer:hover { background: #bbb; }
+
+        #preview {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+            overflow: auto;
+        }
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* Barre de contrôles */
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 6px;
+            border-radius: 10px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid #ccc;
+        }
+
+        .ctrl-item {
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background: white;
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* Custom Select pour le gras */
+        .custom-select {
+            position: relative;
+            user-select: none;
+        }
+        .select-trigger {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            min-width: 80px;
+        }
+        .options-list {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            min-width: 100%;
+        }
+        .options-list li {
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .options-list li:hover { background: #f0f0f0; }
+        .options-list li.bold { font-weight: bold; }
+
+        #open-btn {
+            padding: 6px 10px;
+            font-size: 16px;
+            transition: transform 0.1s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        #open-btn:hover { background: #f0f0f0; transform: scale(1.05); }
+        #open-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <div id="controls">
+        <div class="custom-select" id="input-selector">
+            <div class="select-trigger" id="trigger">mermaid ▾</div>
+            <ul class="options-list" id="options"></ul>
+        </div>
+
+        <select id="output-select" class="ctrl-item">
+            <option value="svg" selected>svg</option>
+            <option value="png">png</option>
+        </select>
+
+        <button id="open-btn" class="ctrl-item" title="Ouvrir dans un nouvel onglet">↗️</button>
+    </div>
+
+    <div class="container">
+        <textarea id="input" placeholder="Saisissez votre code ici...">
+graph TB
+    subgraph L1 [Saisie]
+        A[💡\nIdée] --> B[⌨️  Texte]
+        B --> C{⌛\nAttente}
+    end
+
+    subgraph L2 [Traitement]
+        C --> D[⚙️\nConversion Kroki]
+    end
+
+    subgraph L3 [Rendu]
+        D --> E[🖼️\nImage]
+        E --> F{✨\nOK ?}
+    end
+
+    F -- Non --> B
+    F -- Oui --> G[↗️\nExport]
+
+    %% Style des sous-groupes
+    style L1 fill:#7dd9d4,stroke:transparent
+    style L2 fill:#5e9dc0,stroke:transparent
+    style L3 fill:#9e8ecd,stroke:transparent
+
+    %% Style des nœuds : On définit une classe sans bordure
+    classDef noBorder stroke:transparent,stroke-width:0px
+    class A,B,C,D,E,F,G noBorder
+        </textarea>
+        <div id="resizer"></div>
+        <div id="preview">
+            <img id="output" alt="Diagramme généré">
+        </div>
+    </div>
+
+    <script type="module">
+        import { deflate } from 'https://cdn.jsdelivr.net/npm/pako@3/+esm';
+
+        const inputArea = document.getElementById('input');
+        const outputImg = document.getElementById('output');
+        const openBtn = document.getElementById('open-btn');
+        const outputSelect = document.getElementById('output-select');
+        const trigger = document.getElementById('trigger');
+        const optionsList = document.getElementById('options');
+        const resizer = document.getElementById('resizer');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const domain = urlParams.get('server') || 'https://kroki.io';
+        let currentInputFormat = '/mermaid';
+
+        const rawFormats = [
+            "/actdiag", "/bpmn", "/pikchr", "/nwdiag", "/c4plantuml", "/rackdiag", 
+            "/dot", "/symbolator", "/d2", "/tikz", "/mermaid", "/erd", "/graphviz", 
+            "/vegalite", "/ditaa", "/umlet", "/diagramsnet", "/plantuml", "/seqdiag", 
+            "/nomnoml", "/wavedrom", "/structurizr", "/bytefield", "/wireviz", 
+            "/goat", "/excalidraw", "/dbml", "/packetdiag", "/svgbob", "/vega", "/blockdiag"
+        ];
+
+        // Initialisation du menu personnalisé
+        function initInputSelector() {
+            const sorted = [...rawFormats].sort();
+            const boldItems = ['/c4plantuml', '/plantuml', '/mermaid'];
+
+            sorted.forEach(fmt => {
+                const li = document.createElement('li');
+                li.textContent = fmt.substring(1);
+                if (boldItems.includes(fmt)) li.classList.add('bold');
+                
+                li.addEventListener('click', () => {
+                    currentInputFormat = fmt;
+                    trigger.textContent = `${fmt.substring(1)} ▾`;
+                    optionsList.style.display = 'none';
+                    updateDiagram();
+                });
+                optionsList.appendChild(li);
+            });
+        }
+
+        // Toggle du menu
+        trigger.addEventListener('click', () => {
+            optionsList.style.display = optionsList.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Fermer le menu si on clique ailleurs
+        window.addEventListener('click', (e) => {
+            if (!document.getElementById('input-selector').contains(e.target)) {
+                optionsList.style.display = 'none';
+            }
+        });
+
+        // --- LOGIQUE DU RESIZER (DRAGGABLE) ---
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const newWidth = e.clientX;
+            if (newWidth > 100 && newWidth < window.innerWidth - 100) {
+                inputArea.style.width = `${newWidth}px`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+        });
+
+        function debounce(func, timeout = 1000) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => { func.apply(this, args); }, timeout);
+            };
+        }
+
+        function updateDiagram() {
+            const text = inputArea.value;
+            const outputFmt = outputSelect.value;
+            if (!text) return;
+
+            try {
+                const data = new TextEncoder().encode(text);
+                const compressed = deflate(data, { level: 9 });
+                const binaryString = String.fromCharCode(...compressed);
+                const base64url = btoa(binaryString).replace(/\+/g, '-').replace(/\//g, '_');
+
+                outputImg.src = `${domain}${currentInputFormat}/${outputFmt}/${base64url}`;
+            } catch (e) {
+                console.error("Erreur :", e);
+            }
+        }
+
+        openBtn.addEventListener('click', () => {
+            if (outputImg.src) window.open(outputImg.src, '_blank');
+        });
+
+        const processChange = debounce(() => updateDiagram(), 1000);
+        inputArea.addEventListener('input', processChange);
+        outputSelect.addEventListener('change', updateDiagram);
+
+        initInputSelector();
+        updateDiagram();
+    </script>
+</body>
+</html>
