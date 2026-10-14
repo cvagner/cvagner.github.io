@@ -263,7 +263,11 @@ graph TB
         }
 
         function saveTags(tags) {
-            try { localStorage.setItem(TAGS_KEY, JSON.stringify(tags)); } catch (e) {}
+            try {
+                localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
+            } catch (e) {
+                alert(`Version non enregistrée (stockage du navigateur plein ou bloqué) :\n${e.message}`);
+            }
         }
 
         function addTag(date) {
