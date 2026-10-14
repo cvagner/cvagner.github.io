@@ -416,12 +416,18 @@ graph TB
             };
         }
 
+        function saveDraft() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    text: inputArea.value, input: currentInputFormat, output: outputSelect.value
+                }));
+            } catch (e) {}
+        }
+
         function updateDiagram() {
             const text = inputArea.value;
             const outputFmt = outputSelect.value;
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({ text, input: currentInputFormat, output: outputFmt }));
-            } catch (e) {}
+            saveDraft();
             if (!text) return;
 
             try {
@@ -441,6 +447,7 @@ graph TB
         });
 
         const processChange = debounce(() => updateDiagram(), 1000);
+        inputArea.addEventListener('input', saveDraft);
         inputArea.addEventListener('input', processChange);
         outputSelect.addEventListener('change', updateDiagram);
 
