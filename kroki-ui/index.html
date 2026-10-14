@@ -206,6 +206,17 @@ graph TB
             "/goat", "/excalidraw", "/dbml", "/packetdiag", "/svgbob", "/vega", "/blockdiag"
         ];
 
+        // Restauration du travail sauvegardé (localStorage)
+        const STORAGE_KEY = 'kroki-ui';
+        let saved = {};
+        try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) {}
+        if (typeof saved.text === 'string') inputArea.value = saved.text;
+        if (rawFormats.includes(saved.input)) {
+            currentInputFormat = saved.input;
+            trigger.textContent = `${saved.input.substring(1)} ▾`;
+        }
+        if (['svg', 'png'].includes(saved.output)) outputSelect.value = saved.output;
+
         // Initialisation du menu personnalisé
         function initInputSelector() {
             const boldItems = ['/mermaid', '/plantuml', '/c4plantuml'];
@@ -270,6 +281,9 @@ graph TB
         function updateDiagram() {
             const text = inputArea.value;
             const outputFmt = outputSelect.value;
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ text, input: currentInputFormat, output: outputFmt }));
+            } catch (e) {}
             if (!text) return;
 
             try {
