@@ -43,7 +43,8 @@
             align-items: center;
             justify-content: center;
             background: #f9f9f9;
-            overflow: auto;
+            overflow: hidden;
+            cursor: grab;
         }
         img {
             max-width: 100%;
@@ -344,6 +345,54 @@ graph TB
         document.addEventListener('mouseup', () => {
             isResizing = false;
             document.body.style.cursor = 'default';
+        });
+
+        // --- ZOOM (MOLETTE) ET DÉPLACEMENT (GLISSER) DU SCHÉMA ---
+        // Double-clic pour revenir à la vue initiale
+        const preview = document.getElementById('preview');
+        let zoom = 1, panX = 0, panY = 0;
+        let isPanning = false, startX = 0, startY = 0;
+
+        function applyTransform() {
+            outputImg.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+        }
+
+        preview.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            // Zoom centré sur le curseur
+            const r = preview.getBoundingClientRect();
+            const mx = e.clientX - r.left - r.width / 2;
+            const my = e.clientY - r.top - r.height / 2;
+            const newZoom = Math.min(20, Math.max(0.1, zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+            panX = mx - (mx - panX) * newZoom / zoom;
+            panY = my - (my - panY) * newZoom / zoom;
+            zoom = newZoom;
+            applyTransform();
+        }, { passive: false });
+
+        preview.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isPanning = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+            preview.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            panX = e.clientX - startX;
+            panY = e.clientY - startY;
+            applyTransform();
+        });
+
+        document.addEventListener('mouseup', () => {
+            isPanning = false;
+            preview.style.cursor = '';
+        });
+
+        preview.addEventListener('dblclick', () => {
+            zoom = 1; panX = 0; panY = 0;
+            applyTransform();
         });
 
         function debounce(func, timeout = 1000) {
