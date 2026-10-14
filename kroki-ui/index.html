@@ -208,8 +208,8 @@ graph TB
 
         // Initialisation du menu personnalisé
         function initInputSelector() {
-            const sorted = [...rawFormats].sort();
-            const boldItems = ['/c4plantuml', '/plantuml', '/mermaid'];
+            const boldItems = ['/mermaid', '/plantuml', '/c4plantuml'];
+            const sorted = [...boldItems, ...rawFormats.filter(f => !boldItems.includes(f)).sort()];
 
             sorted.forEach(fmt => {
                 const li = document.createElement('li');
