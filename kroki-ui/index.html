@@ -332,6 +332,17 @@ graph TB
             }
         });
 
+        // Tab dans la zone de texte : indentation de 4 espaces
+        // (execCommand garde l'annulation Ctrl+Z et déclenche l'événement input)
+        inputArea.addEventListener('keydown', (e) => {
+            if (e.key !== 'Tab' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+            e.preventDefault();
+            if (!document.execCommand('insertText', false, '    ')) {
+                inputArea.setRangeText('    ', inputArea.selectionStart, inputArea.selectionEnd, 'end');
+                inputArea.dispatchEvent(new Event('input'));
+            }
+        });
+
         // Ctrl+S (Cmd+S sur Mac) : fixer une version
         document.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
