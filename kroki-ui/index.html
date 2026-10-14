@@ -54,28 +54,25 @@
         /* Barre de contrôles */
         #controls {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
+            bottom: 6px;
+            left: 6px;
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
             z-index: 1000;
             background: rgba(255, 255, 255, 0.8);
             padding: 6px;
-            border-radius: 10px;
             backdrop-filter: blur(4px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border: 1px solid #ccc;
         }
 
         .ctrl-item {
             padding: 6px;
-            border-radius: 6px;
             border: 1px solid #ccc;
             background: white;
             font-size: 12px;
             cursor: pointer;
             outline: none;
+            field-sizing: content;
         }
 
         /* Custom Select pour le gras */
@@ -90,10 +87,8 @@
             padding: 6px 10px;
             border: 1px solid #ccc;
             background: white;
-            border-radius: 6px;
             font-size: 12px;
             cursor: pointer;
-            min-width: 80px;
         }
         .options-list {
             position: absolute;
@@ -101,14 +96,12 @@
             left: 0;
             background: white;
             border: 1px solid #ccc;
-            border-radius: 6px;
             max-height: 300px;
             overflow-y: auto;
             display: none;
             list-style: none;
             margin: 0;
             padding: 0;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             min-width: 100%;
         }
         .options-list li {
@@ -118,6 +111,10 @@
         }
         .options-list li:hover { background: #f0f0f0; }
         .options-list li.bold { font-weight: bold; }
+        #tag-list li { white-space: nowrap; }
+        #tag-list .del, #tag-list .add { display: inline-block; width: 1em; margin-right: 8px; text-align: center; }
+        #tag-list .del { color: #c00; }
+        #tag-list .add { color: #2a2; font-weight: bold; }
 
         #open-btn {
             padding: 6px 10px;
@@ -146,6 +143,11 @@
         </select>
 
         <button id="open-btn" class="ctrl-item" title="Ouvrir dans un nouvel onglet">↗️</button>
+
+        <div class="custom-select" id="tag-selector">
+            <div class="select-trigger" id="tag-trigger" title="Versions">🏷️ 0 ▾</div>
+            <ul class="options-list" id="tag-list"></ul>
+        </div>
     </div>
 
     <div class="container">
@@ -249,6 +251,80 @@ graph TB
             }
         });
 
+        // --- VERSIONS (TAGS HORODATÉS) ---
+        const TAGS_KEY = 'kroki-ui-tags';
+        const tagTrigger = document.getElementById('tag-trigger');
+        const tagList = document.getElementById('tag-list');
+
+        function loadTags() {
+            try { return JSON.parse(localStorage.getItem(TAGS_KEY)) || []; } catch (e) { return []; }
+        }
+
+        function saveTags(tags) {
+            try { localStorage.setItem(TAGS_KEY, JSON.stringify(tags)); } catch (e) {}
+        }
+
+        function renderTags() {
+            const tags = loadTags();
+            tagTrigger.textContent = `🏷️ ${tags.length} ▾`;
+            tagList.innerHTML = '';
+
+            tags.forEach((tag, i) => {
+                const li = document.createElement('li');
+                li.textContent = `${tag.date} · ${tag.input.substring(1)}`;
+                li.addEventListener('click', () => {
+                    inputArea.value = tag.text;
+                    currentInputFormat = tag.input;
+                    trigger.textContent = `${tag.input.substring(1)} ▾`;
+                    tagList.style.display = 'none';
+                    updateDiagram();
+                });
+
+                const del = document.createElement('span');
+                del.className = 'del';
+                del.textContent = '✕';
+                del.title = 'Supprimer';
+                del.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    tags.splice(i, 1);
+                    saveTags(tags);
+                    renderTags();
+                });
+
+                li.prepend(del);
+                tagList.appendChild(li);
+            });
+
+            // Nom de la future version, affiché tel qu'il sera enregistré
+            const nextDate = new Date().toLocaleString('fr-FR');
+            const add = document.createElement('li');
+            add.innerHTML = '<span class="add">+</span><em></em>';
+            add.querySelector('em').textContent = `${nextDate} · ${currentInputFormat.substring(1)}`;
+            add.title = 'Fixer une version';
+            add.addEventListener('click', (e) => {
+                e.stopPropagation();
+                tags.push({
+                    date: nextDate,
+                    text: inputArea.value,
+                    input: currentInputFormat
+                });
+                saveTags(tags);
+                renderTags();
+            });
+            tagList.appendChild(add);
+        }
+
+        tagTrigger.addEventListener('click', () => {
+            renderTags();
+            tagList.style.display = tagList.style.display === 'block' ? 'none' : 'block';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (!document.getElementById('tag-selector').contains(e.target)) {
+                tagList.style.display = 'none';
+            }
+        });
+
         // --- LOGIQUE DU RESIZER (DRAGGABLE) ---
         let isResizing = false;
 
@@ -307,6 +383,7 @@ graph TB
         outputSelect.addEventListener('change', updateDiagram);
 
         initInputSelector();
+        renderTags();
         updateDiagram();
     </script>
 </body>
