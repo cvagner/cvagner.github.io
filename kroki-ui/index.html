@@ -117,7 +117,7 @@
         #tag-list .del { color: #c00; }
         #tag-list .add { color: #2a2; font-weight: bold; }
 
-        #open-btn {
+        #open-btn, #share-btn {
             padding: 6px 10px;
             font-size: 16px;
             transition: transform 0.1s, background 0.2s;
@@ -126,8 +126,8 @@
             justify-content: center;
             line-height: 1;
         }
-        #open-btn:hover { background: #f0f0f0; transform: scale(1.05); }
-        #open-btn:active { transform: scale(0.95); }
+        #open-btn:hover, #share-btn:hover { background: #f0f0f0; transform: scale(1.05); }
+        #open-btn:active, #share-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -144,6 +144,7 @@
         </select>
 
         <button id="open-btn" class="ctrl-item" title="Ouvrir dans un nouvel onglet">↗️</button>
+        <button id="share-btn" class="ctrl-item" title="Copier le lien de partage">🔗</button>
 
         <div class="custom-select" id="tag-selector">
             <div class="select-trigger" id="tag-trigger" title="Versions">🏷️ 0 ▾</div>
@@ -187,7 +188,7 @@ graph TB
     </div>
 
     <script type="module">
-        import { deflate } from 'https://cdn.jsdelivr.net/npm/pako@3/+esm';
+        import { deflate, inflate } from 'https://cdn.jsdelivr.net/npm/pako@3/+esm';
 
         const inputArea = document.getElementById('input');
         const outputImg = document.getElementById('output');
@@ -424,6 +425,13 @@ graph TB
             } catch (e) {}
         }
 
+        function encode(text) {
+            const data = new TextEncoder().encode(text);
+            const compressed = deflate(data, { level: 9 });
+            const binaryString = String.fromCharCode(...compressed);
+            return btoa(binaryString).replace(/\+/g, '-').replace(/\//g, '_');
+        }
+
         function updateDiagram() {
             const text = inputArea.value;
             const outputFmt = outputSelect.value;
@@ -431,16 +439,25 @@ graph TB
             if (!text) return;
 
             try {
-                const data = new TextEncoder().encode(text);
-                const compressed = deflate(data, { level: 9 });
-                const binaryString = String.fromCharCode(...compressed);
-                const base64url = btoa(binaryString).replace(/\+/g, '-').replace(/\//g, '_');
-
-                outputImg.src = `${domain}${currentInputFormat}/${outputFmt}/${base64url}`;
+                outputImg.src = `${domain}${currentInputFormat}/${outputFmt}/${encode(text)}`;
             } catch (e) {
                 console.error("Erreur :", e);
             }
         }
+
+        // Lien de partage (#format/texte compressé) copié dans le presse-papiers
+        const shareBtn = document.getElementById('share-btn');
+        shareBtn.addEventListener('click', async () => {
+            const url = `${location.origin}${location.pathname}${location.search}`
+                + `#${currentInputFormat.substring(1)}/${encode(inputArea.value)}`;
+            try {
+                await navigator.clipboard.writeText(url);
+                shareBtn.textContent = '✅';
+                setTimeout(() => { shareBtn.textContent = '🔗'; }, 1500);
+            } catch (e) {
+                prompt('Lien de partage', url);
+            }
+        });
 
         openBtn.addEventListener('click', () => {
             if (outputImg.src) window.open(outputImg.src, '_blank');
@@ -450,6 +467,25 @@ graph TB
         inputArea.addEventListener('input', saveDraft);
         inputArea.addEventListener('input', processChange);
         outputSelect.addEventListener('change', updateDiagram);
+
+        // Ouverture d'un lien partagé : le diagramme du lien remplace le brouillon,
+        // qui est d'abord fixé en version pour ne pas le perdre
+        const hash = location.hash.match(/^#([a-z0-9]+)\/(.+)$/);
+        if (hash && rawFormats.includes(`/${hash[1]}`)) {
+            try {
+                const bin = atob(hash[2].replace(/-/g, '+').replace(/_/g, '/'));
+                const text = new TextDecoder().decode(inflate(Uint8Array.from(bin, c => c.charCodeAt(0))));
+                if (typeof saved.text === 'string' && saved.text !== text) {
+                    addTag(new Date().toLocaleString('fr-FR'));
+                }
+                inputArea.value = text;
+                currentInputFormat = `/${hash[1]}`;
+                trigger.textContent = `${hash[1]} ▾`;
+            } catch (e) {
+                console.error("Lien invalide :", e);
+            }
+        }
+        if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 
         initInputSelector();
         renderTags();
