@@ -265,6 +265,17 @@ graph TB
             try { localStorage.setItem(TAGS_KEY, JSON.stringify(tags)); } catch (e) {}
         }
 
+        function addTag(date) {
+            const tags = loadTags();
+            tags.push({
+                date,
+                text: inputArea.value,
+                input: currentInputFormat
+            });
+            saveTags(tags);
+            renderTags();
+        }
+
         function renderTags() {
             const tags = loadTags();
             tagTrigger.textContent = `🏷️ ${tags.length} ▾`;
@@ -301,16 +312,10 @@ graph TB
             const add = document.createElement('li');
             add.innerHTML = '<span class="add">+</span><em></em>';
             add.querySelector('em').textContent = `${nextDate} · ${currentInputFormat.substring(1)}`;
-            add.title = 'Fixer une version';
+            add.title = 'Fixer une version (Ctrl+S)';
             add.addEventListener('click', (e) => {
                 e.stopPropagation();
-                tags.push({
-                    date: nextDate,
-                    text: inputArea.value,
-                    input: currentInputFormat
-                });
-                saveTags(tags);
-                renderTags();
+                addTag(nextDate);
             });
             tagList.appendChild(add);
         }
@@ -323,6 +328,14 @@ graph TB
         window.addEventListener('click', (e) => {
             if (!document.getElementById('tag-selector').contains(e.target)) {
                 tagList.style.display = 'none';
+            }
+        });
+
+        // Ctrl+S (Cmd+S sur Mac) : fixer une version
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                addTag(new Date().toLocaleString('fr-FR'));
             }
         });
 
