@@ -1,0 +1,19 @@
+kroki-ui/index.html
+  s_f51571c15d7e28::t_e9d5013af8f398 266-270
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5f78cab60d68be2bee8b5e0099718131269c07d1",
+  "prompts": {},
+  "sessions": {
+    "s_f51571c15d7e28": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fa02bd05-9636-4b6b-9fde-d10e5eff23e3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Charles-Henry Vagner <cva@atolcd.com>"
+    }
+  }
+}
